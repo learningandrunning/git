@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 设置为IUserDao接口方法提供sql语句配置 -->
+<mapper namespace="com.dao.IUserDao">
+
+    <select id="selectUser" resultType="User" parameterType="long">
+        SELECT * FROM user WHERE id = #{id}
+    </select>
+    <select id="selectUserByID" resultType="User" parameterType="int">
+        SELECT * FROM user WHERE id = #{id}
+    </select>
+
+
+    <!-- 返回List而定义的resultMap，注意column是数据库中定义的列字段，而property是我们自定义的字段userAddress，能够解决属性和数据库字段不一致的问题 -->
+    <resultMap type="User" id="resultUserList">
+        <id column="id" property="id"></id>
+        <result column="userName" property="userName"/>
+        <result column="mobile" property="mobile"/>
+        <result column="email" property="email"/>
+    </resultMap>
+    <!-- 通过用户名返回用户列表 -->
+    <!-- 记住：在获取List列表的时候，resultMap="resultUserList"千万别写成resultType="resultUserList"，否则报错 -->
+    <select id="getUserList" parameterType="string"  resultMap="resultUserList">
+        select * from user where userName like #{userName}
+    </select>
+
+
+    <!-- 记住type="Article"新加一个class，要去configuration.xml进行别名定义，否则找不到报错 -->
+    <!-- 通过association来关联user，达到多对一的效果，多篇文章对应一个用户 -->
+    <!-- column="aid"给数据库列id返回值命了一个别名，区分关联的id,否则只能查询出一条数据 -->
+    <resultMap type="Article" id="resultUserArticleList">
+        <id column="aid" property="id"></id>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <!-- <association property="user" javaType="User">
+            <id column="id" property="id"></id>
+            <result column="userName" property="userName"/>
+            <result column="userAddress" property="userAddress"/>
+        </association> -->
+        <!-- 上面的association等同于下面的这个，前提条件是之前就已经定义过resultUserList ,返回前面定义的user-->
+        <association property="user" javaType="User"  resultMap="resultUserList"></association>
+    </resultMap>
+
+    <!-- 获取用户的多个文章 -->
+    <select id="getUserAticles" parameterType="int"  resultMap="resultUserArticleList">
+        select user.id,user.userName,user.mobile,user.email,user.role,
+        article.id aid,article.title,article.content
+        from user,article
+        where user.id=article.userid and user.id=#{id}
+    </select>
+
+    <!-- useGeneratedKeys设置为"true"表明要MyBatis获取由数据库自动生成的主键；keyProperty="id"指定把获取到的主键值注入到User的id属性 -->
+    <insert id="insertUserInfo"  parameterType="User" useGeneratedKeys="true" keyProperty="id">
+        insert into user(userName,mobile,email,role) values (#{userName},#{mobile},#{email},#{role})
+    </insert>
+
+    <update id="updateUserInfo" parameterType="User">
+        update user set userName=#{userName},mobile=#{mobile},email=#{email},role=#{role} where id=#{id}
+    </update>
+
+    <delete id="deleteUserInfo" parameterType="int">
+        delete from user where id=#{id}
+    </delete>
+
+</mapper>
